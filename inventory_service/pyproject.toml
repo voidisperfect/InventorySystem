@@ -1,0 +1,11 @@
+[project]
+name = "inventory-service"
+version = "0.1.0"
+description = "Django Service for Inventory Management"
+dependencies = [
+    "django>=5.0",
+    "djangorestframework",
+    "django-environ",
+    "confluent-kafka",     # The "Translator" for Redpanda
+    "psycopg[binary]",     # PostgreSQL driver
+]

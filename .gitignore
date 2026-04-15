@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.env
+.python-version
+
+# Databases
+*.sqlite3
+postgres_data/
+
+# Docker
+.docker/
+*.log
+
+# ruff
+.ruff_cache/
+# Distribution / Celery
+.uv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store

@@ -1,0 +1,68 @@
+services:
+  # 1. The Database (Postgres)
+  db_inventory:
+    image: postgres:16
+    container_name: db_inventory
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    ports:
+      - "5433:5432"
+    healthcheck:
+      # We use the variables here so the healthcheck actually matches your credentials
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. The Message Broker (Redpanda)
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --kafka-addr INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
+      - --advertise-kafka-addr INTERNAL://redpanda:9092,EXTERNAL://localhost:19092
+    ports:
+      - "19092:19092" # For Windows tools (DBeaver/Kafka UI)
+      - "9092:9092"   # For Django (internal/external mapping)
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "info"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  # 3. The Web UI for Redpanda (Check it at http://localhost:8080)
+  console:
+    image: docker.redpanda.com/redpandadata/console:latest
+    container_name: redpanda_console
+    environment:
+      KAFKA_BROKERS: "redpanda:9092"
+    ports:
+      - "8080:8080"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+
+  # 4. The Inventory Service (Django)
+  inventory_service:
+    build: 
+      context: ./inventory_service
+      dockerfile: Dockerfile
+    container_name: inventory_service
+    env_file:
+      - .env
+    volumes:
+      - ./inventory_service:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db_inventory:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
