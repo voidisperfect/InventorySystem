@@ -15,6 +15,10 @@ class Product(models.Model):
 
 class Reservation(models.Model):
     """Tracks stock that is 'held' while an order is being processed"""
+    class ReservationStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        COMPLETED = 'COMPLETED', 'Completed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(
@@ -22,9 +26,16 @@ class Reservation(models.Model):
     )
     order_id = models.UUIDField(
         unique=True
-    )  # Ensure one reservation per order_id (Idempotency!)
+    )  # ensure one reservation per order_id
     quantity = models.PositiveIntegerField()
+    
     status = models.CharField(
-        max_length=20, default="PENDING"
-    )  # PENDING, COMPLETED, CANCELLED
+        max_length=20, 
+        choices=ReservationStatus.choices,
+        default=ReservationStatus.PENDING
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Reservation {self.id} for Order {self.order_id} ({self.status})"
