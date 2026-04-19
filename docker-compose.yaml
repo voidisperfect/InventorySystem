@@ -28,6 +28,7 @@ services:
       - --overprovisioned
       - --kafka-addr INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
       - --advertise-kafka-addr INTERNAL://redpanda:9092,EXTERNAL://localhost:19092
+      - --set redpanda.auto_create_topics_enabled=true
     ports:
       - "19092:19092" # For Windows tools (DBeaver/Kafka UI)
       - "9092:9092"   # For Django (internal/external mapping)
@@ -66,3 +67,21 @@ services:
         condition: service_healthy
       redpanda:
         condition: service_healthy
+
+# 5. The Inventory Consumer (Background Worker)
+  inventory_consumer:
+    build: 
+      context: ./inventory_service
+      dockerfile: Dockerfile
+    container_name: inventory_consumer
+    command: python -u manage.py consume_orders
+    env_file:
+      - .env
+    volumes:
+      - ./inventory_service:/app
+    depends_on:
+      db_inventory:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    restart: always
