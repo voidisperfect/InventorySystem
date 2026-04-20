@@ -15,6 +15,7 @@ postgres_data/
 # Docker
 .docker/
 *.log
+.dockerignore
 
 # ruff
 .ruff_cache/

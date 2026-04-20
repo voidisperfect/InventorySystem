@@ -17,6 +17,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - microservice_network
 
   # 2. The Message Broker (Redpanda)
   redpanda:
@@ -37,6 +39,8 @@ services:
       interval: 5s
       timeout: 10s
       retries: 5
+    networks:
+      - microservice_network
 
   # 3. The Web UI for Redpanda (Check it at http://localhost:8080)
   console:
@@ -49,6 +53,8 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
+    networks:
+      - microservice_network
 
   # 4. The Inventory Service (Django)
   inventory_service:
@@ -67,6 +73,8 @@ services:
         condition: service_healthy
       redpanda:
         condition: service_healthy
+    networks:
+      - microservice_network
 
 # 5. The Inventory Consumer (Background Worker)
   inventory_consumer:
@@ -85,3 +93,23 @@ services:
       redpanda:
         condition: service_healthy
     restart: always
+    networks:
+      - microservice_network
+
+  order_service:
+    build: ./order_service
+    ports:
+      - "8001:8000"  # External 8001 to avoid clash with Django on 8000
+    volumes:
+      - ./order_service:/app
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+    depends_on:
+      - redpanda
+    networks:
+      - microservice_network
+
+
+networks:
+  microservice_network:
+    driver: bridge
