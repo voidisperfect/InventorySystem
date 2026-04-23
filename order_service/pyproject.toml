@@ -10,4 +10,7 @@ dependencies = [
     "uvicorn>=0.44.0",
     "pydantic[email]",
     "email-validator",
+    "python-jose[cryptography]", 
+    "passlib[bcrypt]",
+    "python-multipart",
 ]

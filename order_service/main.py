@@ -3,10 +3,14 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, EmailStr, Field
 from confluent_kafka import Producer
 import socket
+from auth import get_current_user, create_access_token
+from fastapi.security import OAuth2PasswordRequestForm
+
+
 
 app = FastAPI()
 
@@ -29,16 +33,19 @@ producer = Producer({
 })
 
 # --- 3. MOCK AUTHENTICATION (JWT Placeholder) ---
-async def get_current_user_id():
-    # Placeholder: In reality, extract this from the 'Authorization' header
-    return uuid.uuid4() 
+@app.post("/token")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    # In a real app, you'd check these against a database
+    access_token = create_access_token(data={"sub": form_data.username})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 # --- 4. ENDPOINTS ---
 
-@app.post("/orders/", status_code=status.HTTP_201_CREATED)
+
+@app.post("/orders/", status_code=201)
 async def create_order(
     order_data: OrderRequest, 
-    user_id: uuid.UUID = Depends(get_current_user_id)
+    user_id: str = Depends(get_current_user) 
 ):
     order_id = uuid.uuid4()
     
@@ -53,6 +60,7 @@ async def create_order(
         "status": "PENDING",
         "created_at": datetime.utcnow().isoformat()
     }
+
 
     try:
         # Note: In a real app, you should SAVE this to a DB here before sending to Kafka
