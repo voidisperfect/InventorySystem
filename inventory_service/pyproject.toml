@@ -6,6 +6,6 @@ dependencies = [
     "django>=5.0",
     "djangorestframework",
     "django-environ",
-    "confluent-kafka",     # The "Translator" for Redpanda
-    "psycopg[binary]",     # PostgreSQL driver
+    "faststream[kafka]",
+    "psycopg[binary]",     
 ]
