@@ -82,6 +82,8 @@ services:
       context: ./inventory_service
       dockerfile: Dockerfile
     container_name: inventory_service
+    environment:
+      - RUN_MIGRATIONS=true
     env_file:
       - .env
     volumes:
@@ -102,6 +104,8 @@ services:
       context: ./inventory_service
       dockerfile: Dockerfile
     container_name: inventory_consumer
+    environment:
+      - RUN_MIGRATIONS=false
     command: python -u manage.py consume_orders
     env_file:
       - .env
