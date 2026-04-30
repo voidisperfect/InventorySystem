@@ -7,14 +7,33 @@ services:
     env_file:
       - .env
     environment:
-      - POSTGRES_USER=${DATABASE_USER}
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
-      - POSTGRES_DB=${DATABASE_NAME}
+      - POSTGRES_USER=${INVENTORY_DATABASE_USER}
+      - POSTGRES_PASSWORD=${INVENTORY_DATABASE_PASSWORD}
+      - POSTGRES_DB=${INVENTORY_DATABASE_NAME}
     ports:
       - "5433:5432"
     healthcheck:
-      # We use the variables here so the healthcheck actually matches your credentials
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${INVENTORY_DATABASE_USER} -d ${INVENTORY_DATABASE_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservice_network
+
+      # Second db for orders, to keep it separate from inventory
+  db_orders:
+    image: postgres:16
+    container_name: db_orders
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${ORDERS_DATABASE_USER}
+      - POSTGRES_PASSWORD=${ORDERS_DATABASE_PASSWORD}
+      - POSTGRES_DB=${ORDERS_DATABASE_NAME}
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ORDERS_DATABASE_USER} -d ${ORDERS_DATABASE_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -109,6 +128,8 @@ services:
       environment:
         - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
       depends_on:
+        db_orders:
+          condition: service_healthy
         redpanda:
           condition: service_healthy 
       networks:

@@ -13,4 +13,7 @@ dependencies = [
     "passlib[bcrypt]",
     "python-multipart",
     "faststream[kafka]",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "asyncpg>=0.29.0",
+    "python-dotenv>=1.0.0",
 ]
