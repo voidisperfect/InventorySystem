@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from faststream.kafka.fastapi import KafkaRouter
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -61,11 +62,44 @@ async def create_order(
 
     order_id = uuid.uuid4()
     
+    # 1. Collect product IDs to fetch prices
+    product_ids = [str(item.product_id) for item in order_data.items]
+    
+    # 2. Fetch prices from inventory_service
+    INVENTORY_SERVICE_URL = os.getenv("INVENTORY_SERVICE_URL", "http://inventory-api:8000")
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                f"{INVENTORY_SERVICE_URL}/api/v1/products/prices/",
+                json={"product_ids": product_ids},
+                timeout=5.0
+            )
+            response.raise_for_status()
+            prices = response.json()
+        except Exception as e:
+            print(f"❌ Error fetching prices from inventory service: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Could not retrieve product prices. Please try again later."
+            )
+            
+    # 3. Calculate total_price
+    calculated_total_price = 0.0
+    for item in order_data.items:
+        price_str = prices.get(str(item.product_id))
+        if price_str is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Product {item.product_id} not found or price not available."
+            )
+        calculated_total_price += float(price_str) * item.quantity
+
     # Create Order Record
     new_order = Order(
         id=order_id,
         user_id=str(user_id), # Using the validated user_id variable
-        status="PENDING"
+        status="PENDING",
+        total_price=calculated_total_price
     )
     
     # Add Order Items
@@ -95,8 +129,11 @@ async def create_order(
     event = {
         "order_id": str(order_id),
         "user_id": str(user_id),
+        "customer_email": user.get("email", f"{user_id}@example.com"),
         "items": [item.model_dump() for item in order_data.items],
-        "status": "PENDING"
+        "total_price": float(calculated_total_price),
+        "status": "PENDING",
+        "created_at": new_order.created_at.isoformat() if new_order.created_at else None
     }
 
     # 6. Kafka Publish
@@ -115,7 +152,7 @@ async def create_order(
             detail="Order saved but message queue unavailable."
         )
         
-    return {"order_id": order_id, "status": "PENDING"}
+    return {"order_id": order_id, "status": "PENDING", "total_price": new_order.total_price, "created_at": new_order.created_at}
 
 @app.get("/api/v1/orders/{order_id}/", response_model=OrderResponse)
 async def get_order_status(
@@ -129,4 +166,4 @@ async def get_order_status(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
         
-    return OrderResponse(order_id=order.id, status=order.status)
+    return OrderResponse(order_id=order.id, status=order.status, total_price=order.total_price, created_at=order.created_at)

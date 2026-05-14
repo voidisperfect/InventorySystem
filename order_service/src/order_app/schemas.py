@@ -17,11 +17,13 @@ class OrderItem(BaseModel):
     quantity: int = Field(gt=0, le=1000)
 
 class OrderRequest(BaseModel):
-    items: List[OrderItem] = Field(min_length=1) 
+    items: List[OrderItem] = Field(min_length=1)
 
 class OrderResponse(BaseModel):
     order_id: uuid.UUID
     status: OrderStatus
+    total_price: Decimal
+    created_at: datetime
 
 class OrderEvent(BaseModel):
     model_config = ConfigDict(coerce_numbers_to_str=False) 
