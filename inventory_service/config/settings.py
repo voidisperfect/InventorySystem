@@ -21,7 +21,7 @@ environ.Env.read_env(BASE_DIR / '.env')
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
 
 # Application definition
@@ -73,6 +73,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     'default': env.db('INVENTORY_DATABASE_URL'),
 }
+DATABASES['default']['CONN_MAX_AGE'] = 600  # Enable persistent connections (10 minutes)
 
 
 # Password validation

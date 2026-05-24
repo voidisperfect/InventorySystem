@@ -1,9 +1,13 @@
+import os
 from faststream.kafka.fastapi import KafkaRouter
 from sqlalchemy import select
+from loguru import logger
 from .database import AsyncSessionLocal 
 from .models import Order
+from .schemas import OrderStatus
 
-router = KafkaRouter("redpanda:9092")
+KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "redpanda:9092")
+router = KafkaRouter(KAFKA_BROKERS)
 
 @router.subscriber("inventory_responses")
 async def handle_inventory_response(data: dict):
@@ -16,7 +20,7 @@ async def handle_inventory_response(data: dict):
     reason = data.get("reason")
 
     if not order_id:
-        print("⚠️ Received response without order_id")
+        logger.warning("Received response without order_id")
         return
 
     # Use a manual session since this runs as a background task outside a request
@@ -27,20 +31,20 @@ async def handle_inventory_response(data: dict):
             order = result.scalar_one_or_none()
 
             if not order:
-                print(f"❌ Order {order_id} not found in database")
+                logger.error(f"Order {order_id} not found in database")
                 return
 
             # Update status based on the payload from consume_orders.py
             if status_response == "SUCCESS":
-                order.status = "COMPLETED"
-                print(f"✅ Order {order_id} is now COMPLETED: {reason}")
+                order.status = OrderStatus.COMPLETED.value
+                logger.info(f"Order {order_id} is now COMPLETED: {reason}")
             else:
-                order.status = "FAILED"
-                print(f"❌ Order {order_id} is now FAILED: {reason}")
+                order.status = OrderStatus.FAILED.value
+                logger.error(f"Order {order_id} is now FAILED: {reason}")
 
             # Commit the transaction to Postgres
             await db.commit()
             
         except Exception as e:
             await db.rollback()
-            print(f"🔥 Database Error in subscriber: {str(e)}")
+            logger.critical(f"Database Error in subscriber: {str(e)}")

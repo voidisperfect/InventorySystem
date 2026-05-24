@@ -27,6 +27,7 @@ engine = create_async_engine(
     max_overflow=20,        # Allow up to 20 extra if traffic spikes
     pool_timeout=30,        # Wait 30s for a connection before failing
     pool_recycle=1800,      # Recycle connections every 30 mins to prevent stale links
+    pool_pre_ping=True,     # Robust connection check before queries
 )
 
 

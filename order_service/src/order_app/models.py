@@ -2,12 +2,13 @@ from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, ForeignKey, Numeric, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from .database import Base
+from .schemas import OrderStatus
 
 class Order(Base):
     __tablename__ = "orders"
     id = Column(UUID(as_uuid=True), primary_key=True)
     user_id = Column(String, nullable=False)
-    status = Column(String, default="PENDING")
+    status = Column(String, default=OrderStatus.PENDING.value)
     total_price = Column(Numeric(10, 2), nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 

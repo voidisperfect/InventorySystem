@@ -8,4 +8,6 @@ dependencies = [
     "django-environ",
     "faststream[kafka]",
     "psycopg[binary]",     
+    "loguru>=0.7.0",
+    "gunicorn>=21.2.0",
 ]
