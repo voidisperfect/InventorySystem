@@ -1,6 +1,6 @@
 # Variables - These MUST match the service names in your docker-compose.yml
 COMPOSE = docker-compose
-#ORDER_SERVICE = order_service
+ORDER_SERVICE = order_service
 INVENTORY_SERVICE = inventory_service
 RUFF = uv run ruff
 
@@ -54,11 +54,11 @@ lint:
 format:
 	$(RUFF) format .
 	
-test: ## Run pytest suites for both services
-#	@echo "Running Order Service Tests..."
-#	$(COMPOSE) exec $(ORDER_SERVICE) pytest
+test: ## Run test suites inside Docker for both services
+	@echo "Running Order Service Tests..."
+	$(COMPOSE) exec $(ORDER_SERVICE) uv run pytest /app/tests
 	@echo "Running Inventory Service Tests..."
-	$(COMPOSE) exec $(INVENTORY_SERVICE) pytest
+	$(COMPOSE) exec $(INVENTORY_SERVICE) python manage.py test products
 
 clean: ## Deep clean: removes containers, volumes, and python cache files
 	$(COMPOSE) down -v
