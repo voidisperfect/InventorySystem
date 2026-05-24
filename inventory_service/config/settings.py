@@ -16,12 +16,12 @@ import environ
 
 env = environ.Env()
 BASE_DIR = Path(__file__).resolve().parent.parent
-environ.Env.read_env(BASE_DIR / '.env')
+environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env('DJANGO_SECRET_KEY')
-DEBUG = env('DEBUG')
+SECRET_KEY = env("DJANGO_SECRET_KEY")
+DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
 
 # Application definition
@@ -71,9 +71,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': env.db('INVENTORY_DATABASE_URL'),
+    "default": env.db("INVENTORY_DATABASE_URL"),
 }
-DATABASES['default']['CONN_MAX_AGE'] = 600  # Enable persistent connections (10 minutes)
+DATABASES["default"]["CONN_MAX_AGE"] = 600  # Enable persistent connections (10 minutes)
 
 
 # Password validation

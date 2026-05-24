@@ -2,12 +2,13 @@ import os
 from faststream.kafka.fastapi import KafkaRouter
 from sqlalchemy import select
 from loguru import logger
-from .database import AsyncSessionLocal 
+from .database import AsyncSessionLocal
 from .models import Order
 from .schemas import OrderStatus
 
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "redpanda:9092")
 router = KafkaRouter(KAFKA_BROKERS)
+
 
 @router.subscriber("inventory_responses")
 async def handle_inventory_response(data: dict):
@@ -16,7 +17,7 @@ async def handle_inventory_response(data: dict):
     """
     order_id = data.get("order_id")
     # consume_orders.py sends "SUCCESS" or "FAILED"
-    status_response = data.get("status") 
+    status_response = data.get("status")
     reason = data.get("reason")
 
     if not order_id:
@@ -44,7 +45,7 @@ async def handle_inventory_response(data: dict):
 
             # Commit the transaction to Postgres
             await db.commit()
-            
+
         except Exception as e:
             await db.rollback()
             logger.critical(f"Database Error in subscriber: {str(e)}")

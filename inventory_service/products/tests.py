@@ -2,15 +2,18 @@ from unittest.mock import AsyncMock, patch
 import uuid
 from django.test import TestCase
 from products.models import Product, Reservation
-from products.management.commands.consume_orders import process_order_sync, handle_order, ProcessOrderResult
+from products.management.commands.consume_orders import (
+    process_order_sync,
+    handle_order,
+    ProcessOrderResult,
+)
+
 
 class ConsumeOrdersTests(TestCase):
     def setUp(self):
         # Create a test product
         self.product = Product.objects.create(
-            name="Super Fast SSD",
-            price="99.99",
-            stock_quantity=10
+            name="Super Fast SSD", price="99.99", stock_quantity=10
         )
 
     def test_process_order_sync_success(self):
@@ -18,9 +21,7 @@ class ConsumeOrdersTests(TestCase):
         order_id = uuid.uuid4()
         payload = {
             "order_id": str(order_id),
-            "items": [
-                {"product_id": str(self.product.id), "quantity": 2}
-            ]
+            "items": [{"product_id": str(self.product.id), "quantity": 2}],
         }
 
         # Run process_order_sync
@@ -44,9 +45,7 @@ class ConsumeOrdersTests(TestCase):
         order_id = uuid.uuid4()
         payload = {
             "order_id": str(order_id),
-            "items": [
-                {"product_id": str(self.product.id), "quantity": 3}
-            ]
+            "items": [{"product_id": str(self.product.id), "quantity": 3}],
         }
 
         # First run (Success)
@@ -68,8 +67,11 @@ class ConsumeOrdersTests(TestCase):
         payload = {
             "order_id": str(order_id),
             "items": [
-                {"product_id": str(self.product.id), "quantity": 15}  # Only 10 available
-            ]
+                {
+                    "product_id": str(self.product.id),
+                    "quantity": 15,
+                }  # Only 10 available
+            ],
         }
 
         result = process_order_sync(payload)
@@ -86,24 +88,23 @@ class ConsumeOrdersTests(TestCase):
         fake_product_id = uuid.uuid4()
         payload = {
             "order_id": str(order_id),
-            "items": [
-                {"product_id": str(fake_product_id), "quantity": 1}
-            ]
+            "items": [{"product_id": str(fake_product_id), "quantity": 1}],
         }
 
         result = process_order_sync(payload)
         self.assertFalse(result.success)
         self.assertIn("not found", result.detail)
 
-    @patch("products.management.commands.consume_orders.publisher.publish", new_callable=AsyncMock)
+    @patch(
+        "products.management.commands.consume_orders.publisher.publish",
+        new_callable=AsyncMock,
+    )
     async def test_handle_order_success(self, mock_publish):
         """Verify handle_order async handler publishes a SUCCESS payload to Kafka."""
         order_id = uuid.uuid4()
         payload = {
             "order_id": str(order_id),
-            "items": [
-                {"product_id": str(self.product.id), "quantity": 1}
-            ]
+            "items": [{"product_id": str(self.product.id), "quantity": 1}],
         }
 
         await handle_order(payload)
@@ -115,7 +116,10 @@ class ConsumeOrdersTests(TestCase):
         self.assertEqual(published_payload["status"], "SUCCESS")
         self.assertEqual(published_payload["reason"], "All items reserved successfully")
 
-    @patch("products.management.commands.consume_orders.publisher.publish", new_callable=AsyncMock)
+    @patch(
+        "products.management.commands.consume_orders.publisher.publish",
+        new_callable=AsyncMock,
+    )
     async def test_handle_order_failure(self, mock_publish):
         """Verify handle_order async handler publishes a FAILED payload to Kafka when out of stock."""
         order_id = uuid.uuid4()
@@ -123,7 +127,7 @@ class ConsumeOrdersTests(TestCase):
             "order_id": str(order_id),
             "items": [
                 {"product_id": str(self.product.id), "quantity": 50}  # Over limits
-            ]
+            ],
         }
 
         await handle_order(payload)

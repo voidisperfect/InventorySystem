@@ -10,6 +10,7 @@ from .routers import orders_router, auth_router
 
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "redpanda:9092")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 Booting up: Initializing Order Database...")
@@ -18,6 +19,7 @@ async def lifespan(app: FastAPI):
     app.state.publisher = publisher
     yield
     logger.info("🛑 Shutting down: Cleaning up resources...")
+
 
 app = FastAPI(lifespan=lifespan)
 
